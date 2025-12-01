@@ -58,15 +58,13 @@ typedef struct {
 #define FRAME_START_BYTE    0xAA
 #define FRAME_END_BYTE      0x55
 
-// ADC reference voltage (in millivolts)
+// ADC millivolts
 #define VREF_MV             3300
 #define ADC_RESOLUTION      4095
-
-// Queue sizes
+//queues
 #define PRE_ENCRYPT_QUEUE_SIZE   10
 #define POST_ENCRYPT_QUEUE_SIZE  10
-
-// Button pins
+//buttons
 #define BUTTON_AES_PIN      GPIO_PIN_6
 #define BUTTON_CHACHA_PIN   GPIO_PIN_7
 #define BUTTON_GPIO_PORT    GPIOA
@@ -87,13 +85,13 @@ osMutexId uartMutexHandle;
 
 /* USER CODE BEGIN PV */
 
-// AES Key (16 bytes for AES-128)
+// AES key (16 bytes:AES-128)
 static const unsigned char aes_key[16] = {
     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
     0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
 };
 
-// ChaCha20 Key (32 bytes)
+// ChaCha20 key (32 bytes)
 static const unsigned char chacha20_key[32] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -101,7 +99,7 @@ static const unsigned char chacha20_key[32] = {
     0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
 };
 
-// ChaCha20 Nonce (12 bytes)
+// ChaCha20 nonce (12 bytes)
 static const unsigned char chacha20_nonce[12] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00
@@ -112,18 +110,18 @@ static unsigned char aes_iv[16] = {
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 };
 
-// System state
+// the system state
 volatile EncryptionMode_t currentMode = MODE_PLAINTEXT;
 volatile EncryptionMode_t pendingMode = MODE_PLAINTEXT;
 volatile uint32_t buttonPA6PressTime = 0;
 volatile uint32_t buttonPA7PressTime = 0;
 volatile uint32_t sequenceCounter = 0;
 
-// ADC reading (shared between tasks)
+// ADC reading
 volatile uint16_t adcValue = 0;
 volatile float voltageReading = 0.0f;
 
-// Debug counters to detect ISR entry
+// debug counters/detects entry
 volatile uint32_t debugISRCounter = 0;
 volatile uint32_t debugPA6Counter = 0;
 volatile uint32_t debugPA7Counter = 0;
@@ -142,7 +140,7 @@ void ChaCha20Task(void const * argument);
 void UARTTransmitTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-// Encryption Functions
+// encryption
 static int add_pkcs7_padding(uint8_t *data, size_t data_len, size_t buffer_size);
 static uint8_t calculate_checksum(const uint8_t *data, size_t length);
 static void generate_random_iv(uint8_t *iv);
@@ -153,7 +151,7 @@ static int chacha20_encrypt_data(const uint8_t *plaintext, size_t plain_len,
 int create_encrypted_frame(const uint8_t *encrypted, size_t enc_len,
                           uint8_t *frame, size_t *frame_len, EncryptionMode_t mode);
 
-// Utility functions
+// functions for utility
 int _write(int file, char *ptr, int len);
 float read_voltage_mv(void);
 void print_hex(const char* label, const uint8_t* data, size_t length);
@@ -217,21 +215,21 @@ float read_voltage_mv(void)
 
 /**
  * @brief Button interrupt callback - FIXED VERSION
- * Ensures proper toggle behavior for both buttons
+ *  proper toggle behavior for both buttons
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    // Increment debug counter
+    // INcrement counter
     debugISRCounter++;
 
     if (GPIO_Pin == BUTTON_AES_PIN) {
         debugPA6Counter++;
 
-        // If currently in AES mode, go back to plaintext
+        // if AES mode, go back to PT
         if (currentMode == MODE_AES) {
             pendingMode = MODE_PLAINTEXT;
         }
-        // Otherwise, switch to AES (from plaintext or chacha20)
+        // else switch to AES (from PT or chacha20)
         else {
             pendingMode = MODE_AES;
         }
@@ -239,11 +237,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     else if (GPIO_Pin == BUTTON_CHACHA_PIN) {
         debugPA7Counter++;
 
-        // If currently in ChaCha20 mode, go back to plaintext
+        // if ChaCha20 mode, go back to PT
         if (currentMode == MODE_CHACHA20) {
             pendingMode = MODE_PLAINTEXT;
         }
-        // Otherwise, switch to ChaCha20 (from plaintext or AES)
+        // else switch to ChaCha20 (from PT or AES)
         else {
             pendingMode = MODE_CHACHA20;
         }
@@ -251,7 +249,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 /**
- * @brief Add PKCS#7 padding
+ * @brief add PKCS#7 padding
  */
 static int add_pkcs7_padding(uint8_t *data, size_t data_len, size_t buffer_size)
 {
@@ -269,7 +267,7 @@ static int add_pkcs7_padding(uint8_t *data, size_t data_len, size_t buffer_size)
 }
 
 /**
- * @brief Calculate XOR checksum
+ * @brief calculate XOR checksum
  */
 static uint8_t calculate_checksum(const uint8_t *data, size_t length)
 {
@@ -281,7 +279,7 @@ static uint8_t calculate_checksum(const uint8_t *data, size_t length)
 }
 
 /**
- * @brief Generate IV
+ * @brief generate IV
  */
 static void generate_random_iv(uint8_t *iv)
 {
@@ -296,7 +294,7 @@ static void generate_random_iv(uint8_t *iv)
 }
 
 /**
- * @brief Encrypt data using AES-128 ECB
+ * @brief encrypt data using AES-128 ECB
  */
 static int aes_encrypt_data(const uint8_t *plaintext, size_t plain_len,
                            uint8_t *ciphertext, size_t *cipher_len,
@@ -328,7 +326,7 @@ static int aes_encrypt_data(const uint8_t *plaintext, size_t plain_len,
         return ret;
     }
 
-    // Encrypt block by block (ECB mode)
+    // encrypt block by block (ECB mode)
     for (int i = 0; i < padded_len; i += 16) {
         ret = mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT,
                                      &padded_buffer[i], &ciphertext[i]);
@@ -345,7 +343,7 @@ static int aes_encrypt_data(const uint8_t *plaintext, size_t plain_len,
 }
 
 /**
- * @brief Encrypt data using ChaCha20
+ * @brief encrypt data using ChaCha20
  */
 static int chacha20_encrypt_data(const uint8_t *plaintext, size_t plain_len,
                                 uint8_t *ciphertext, size_t *cipher_len)
@@ -359,7 +357,7 @@ static int chacha20_encrypt_data(const uint8_t *plaintext, size_t plain_len,
         return -1;
     }
 
-    // Create unique nonce by incrementing counter
+    // unique nonce through incrementing counter
     memcpy(nonce, chacha20_nonce, 12);
     counter++;
     nonce[8] = (counter >> 24) & 0xFF;
@@ -389,12 +387,12 @@ static int chacha20_encrypt_data(const uint8_t *plaintext, size_t plain_len,
 
     mbedtls_chacha20_free(&chacha);
 
-    *cipher_len = plain_len;  // ChaCha20 doesn't require padding
+    *cipher_len = plain_len;
     return 0;
 }
 
 /**
- * @brief Create encrypted frame with header and checksum
+ * @brief create encrypted frame with header and checksum
  */
 int create_encrypted_frame(const uint8_t *encrypted, size_t enc_len,
                           uint8_t *frame, size_t *frame_len,
@@ -404,7 +402,7 @@ int create_encrypted_frame(const uint8_t *encrypted, size_t enc_len,
     size_t index = 0;
 
     frame[index++] = FRAME_START_BYTE;
-    frame[index++] = (uint8_t)mode;  // Mode identifier
+    frame[index++] = (uint8_t)mode;
     frame[index++] = (enc_len >> 8) & 0xFF;
     frame[index++] = enc_len & 0xFF;
 
@@ -440,7 +438,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-  // Start ADC in continuous conversion mode
+  // ADC in continuous conversion mode
   if (HAL_ADC_Start(&hadc1) != HAL_OK) {
     Error_Handler();
   }
@@ -478,18 +476,18 @@ int main(void)
 
   /* USER CODE END 2 */
 
-  /* Create mutexes */
+  /* create mutexes */
   osMutexDef(uartMutex);
   uartMutexHandle = osMutexCreate(osMutex(uartMutex));
 
-  /* Create queues */
+  /* create queues */
   osMessageQDef(preEncryptQueue, PRE_ENCRYPT_QUEUE_SIZE, ADC_Reading_t);
   preEncryptQueueHandle = osMessageCreate(osMessageQ(preEncryptQueue), NULL);
 
   osMessageQDef(postEncryptQueue, POST_ENCRYPT_QUEUE_SIZE, EncryptedData_t*);
   postEncryptQueueHandle = osMessageCreate(osMessageQ(postEncryptQueue), NULL);
 
-  /* Create threads */
+  /* create threads */
   osThreadDef(ADCRead, ADCReadTask, osPriorityNormal, 0, 256);
   ADCReadTaskHandle = osThreadCreate(osThread(ADCRead), NULL);
 
@@ -502,7 +500,7 @@ int main(void)
   osThreadDef(UARTTransmit, UARTTransmitTask, osPriorityHigh, 0, 512);
   UARTTransmitTaskHandle = osThreadCreate(osThread(UARTTransmit), NULL);
 
-  /* Start scheduler */
+  /* start scheduler */
   osKernelStart();
 
   while (1)
@@ -644,7 +642,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /**
- * @brief ADC Read Task - Continuously reads ADC and queues data
+ * @brief ADC read task - Continuously reads and queues
  */
 void ADCReadTask(void const * argument)
 {
@@ -656,21 +654,21 @@ void ADCReadTask(void const * argument)
 
     for(;;)
     {
-        // Read ADC value
+        // read ADC value
         adcValue = HAL_ADC_GetValue(&hadc1);
         voltageReading = read_voltage_mv();
 
-        // Prepare reading structure
+        // prepare reading structure
         reading.voltage = voltageReading;
         reading.adcValue = adcValue;
         reading.timestamp = HAL_GetTick();
         reading.sequenceNumber = sequenceCounter++;
 
-        // Only queue if someone will process it
-        // Check current and pending modes
+        // only queue if someone will process it
+        // check current and pending modes
         EncryptionMode_t activeMode = (pendingMode != currentMode) ? pendingMode : currentMode;
 
-        // Only queue for encryption tasks if in encryption mode
+        // only queue for encryption tasks if in encryption mode
         if (activeMode != MODE_PLAINTEXT) {
             if (osMessagePut(preEncryptQueueHandle, (uint32_t)&reading, 10) != osOK) {
                 queueFailCount++;
@@ -679,9 +677,9 @@ void ADCReadTask(void const * argument)
                 }
             }
         }
-        // In plaintext mode, data is read directly by UART task via globals
+        // in plaintext mode, data is read directly by UART task via globals
 
-        // Sample every 250ms (4 samples per second)
+        // sample every 250ms
         osDelay(250);
     }
 }
@@ -704,29 +702,28 @@ void AESTask(void const * argument)
 
     for(;;)
     {
-        // Check for mode change request FIRST
+        // check for mode change request
         if (pendingMode != MODE_AES && currentMode == MODE_AES) {
             currentMode = pendingMode;
             printf("\r\n>>> Switching to %s mode <<<\r\n\r\n",
                    mode_to_string(currentMode));
         }
 
-        // Check if we should be active
+        // check if it should be active
         if (currentMode == MODE_AES || pendingMode == MODE_AES) {
-            // Wait for data from pre-encrypt queue
+            // Wait :P✋
             evt = osMessageGet(preEncryptQueueHandle, 100);
 
             if (evt.status == osEventMessage) {
-                // Copy reading from queue
+                // copy reading from queue
                 memcpy(&reading, (void*)evt.value.p, sizeof(ADC_Reading_t));
 
-                // Update mode if pending
+                // update mode if pending
                 if (pendingMode == MODE_AES && currentMode != MODE_AES) {
                     currentMode = MODE_AES;
                     printf("\r\n>>> AES encryption activated <<<\r\n\r\n");
                 }
 
-                // Format plaintext
                 int voltage_int = (int)(reading.voltage / 1000.0f);
                 int voltage_frac = (int)((reading.voltage / 1000.0f - voltage_int) * 100);
 
@@ -736,23 +733,23 @@ void AESTask(void const * argument)
 
                 printf("[AES_TASK] Plaintext: %s\r\n", plaintext);
 
-                // Encrypt the data
+                // Encrypt
                 ret = aes_encrypt_data((uint8_t*)plaintext, strlen(plaintext),
                                       encrypted, &enc_len, NULL);
 
                 if (ret == 0) {
-                    // Allocate memory for encrypted data
+                    // allocate memory
                     encData = (EncryptedData_t*)pvPortMalloc(sizeof(EncryptedData_t));
 
                     if (encData != NULL) {
-                        // Create frame with encrypted data
+                        // create frame with encrypted data
                         create_encrypted_frame(encrypted, enc_len,
                                              encData->data, &encData->length,
                                              MODE_AES);
                         encData->sequenceNumber = reading.sequenceNumber;
                         encData->mode = MODE_AES;
 
-                        // Queue for transmission
+                        // Queue
                         if (osMessagePut(postEncryptQueueHandle, (uint32_t)encData, 100) != osOK) {
                             printf("[AES_TASK] Error: Post-encrypt queue full!\r\n");
                             vPortFree(encData);
@@ -765,14 +762,14 @@ void AESTask(void const * argument)
                 }
             }
         } else {
-            // Not our turn, sleep longer
+            // Not our turn- sleep longer Zzzz
             osDelay(100);
         }
     }
 }
 
 /**
- * @brief ChaCha20 Task - Processes data when in ChaCha20 mode
+ * @brief ChaCha20 Task - processes data when in ChaCha20 mode
  */
 void ChaCha20Task(void const * argument)
 {
@@ -789,29 +786,28 @@ void ChaCha20Task(void const * argument)
 
     for(;;)
     {
-        // Check for mode change request FIRST
+        // Check for mode change request
         if (pendingMode != MODE_CHACHA20 && currentMode == MODE_CHACHA20) {
             currentMode = pendingMode;
             printf("\r\n>>> Switching to %s mode <<<\r\n\r\n",
                    mode_to_string(currentMode));
         }
 
-        // Check if we should be active
+        // check if it should be active
         if (currentMode == MODE_CHACHA20 || pendingMode == MODE_CHACHA20) {
-            // Wait for data from pre-encrypt queue
+            // wait
             evt = osMessageGet(preEncryptQueueHandle, 100);
 
             if (evt.status == osEventMessage) {
-                // Copy reading from queue
+                // copy reading from queue
                 memcpy(&reading, (void*)evt.value.p, sizeof(ADC_Reading_t));
 
-                // Update mode if pending
+                // update
                 if (pendingMode == MODE_CHACHA20 && currentMode != MODE_CHACHA20) {
                     currentMode = MODE_CHACHA20;
                     printf("\r\n>>> ChaCha20 encryption activated <<<\r\n\r\n");
                 }
 
-                // Format plaintext
                 int voltage_int = (int)(reading.voltage / 1000.0f);
                 int voltage_frac = (int)((reading.voltage / 1000.0f - voltage_int) * 100);
 
@@ -821,23 +817,23 @@ void ChaCha20Task(void const * argument)
 
                 printf("[CHACHA20_TASK] Plaintext: %s\r\n", plaintext);
 
-                // Encrypt the data
+                // encrypt
                 ret = chacha20_encrypt_data((uint8_t*)plaintext, strlen(plaintext),
                                            encrypted, &enc_len);
 
                 if (ret == 0) {
-                    // Allocate memory for encrypted data
+                    // allocate memory
                     encData = (EncryptedData_t*)pvPortMalloc(sizeof(EncryptedData_t));
 
                     if (encData != NULL) {
-                        // Create frame with encrypted data
+                        // create frame with encrypted data
                         create_encrypted_frame(encrypted, enc_len,
                                              encData->data, &encData->length,
                                              MODE_CHACHA20);
                         encData->sequenceNumber = reading.sequenceNumber;
                         encData->mode = MODE_CHACHA20;
 
-                        // Queue for transmission
+                        // queue
                         if (osMessagePut(postEncryptQueueHandle, (uint32_t)encData, 100) != osOK) {
                             printf("[CHACHA20_TASK] Error: Post-encrypt queue full!\r\n");
                             vPortFree(encData);
@@ -850,7 +846,7 @@ void ChaCha20Task(void const * argument)
                 }
             }
         } else {
-            // Not our turn, sleep longer
+            // Not our turn, sleep longer honk shoo
             osDelay(100);
         }
     }
